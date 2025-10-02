@@ -1,0 +1,115 @@
+{
+  "name": "Sistema Stock & Finanzas",
+  "short_name": "Stock App",
+  "description": "Sistema completo de gestión de inventario y finanzas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/static/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+  {
+    "src": "/static/icons/icon-512x512.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "form_factor": "narrow"
+  },
+  {
+    "src": "/static/icons/icon-512x512.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "form_factor": "wide"
+  }
+],
+  "shortcuts": [
+    {
+      "name": "Nuevo Producto",
+      "short_name": "Producto",
+      "description": "Agregar nuevo producto",
+      "url": "/productos/nuevo",
+      "icons": [
+        {
+          "src": "/static/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Nuevo Movimiento",
+      "short_name": "Movimiento",
+      "description": "Registrar movimiento de stock",
+      "url": "/movimientos/nuevo",
+      "icons": [
+        {
+          "src": "/static/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Nueva Finanza",
+      "short_name": "Finanza",
+      "description": "Registrar ingreso o egreso",
+      "url": "/finanzas/nueva",
+      "icons": [
+        {
+          "src": "/static/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "prefer_related_applications": false
+}

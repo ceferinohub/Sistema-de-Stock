@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema Stock & Finanzas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-3">
+            <i class="bi bi-speedometer2"></i> Dashboard
+            <small class="text-muted">Resumen general del negocio</small>
+        </h1>
+    </div>
+</div>
+
+<!-- Tarjetas de resumen financiero -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card card-stat">
+            <div class="card-body text-center">
+                <i class="bi bi-cash-coin fs-1 mb-2"></i>
+                <h5>${{ "%.2f"|format(balance.ingresos_brutos) }}</h5>
+                <p class="mb-0">Ingresos Brutos</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card card-stat" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up fs-1 mb-2"></i>
+                <h5>${{ "%.2f"|format(balance.ganancias_netas) }}</h5>
+                <p class="mb-0">Ganancias Netas</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card card-stat" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-down-circle fs-1 mb-2"></i>
+                <h5>${{ "%.2f"|format(balance.egresos) }}</h5>
+                <p class="mb-0">Egresos</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card card-stat" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="card-body text-center">
+                <i class="bi bi-wallet2 fs-1 mb-2"></i>
+                <h5 class="{% if balance.balance >= 0 %}text-light{% else %}text-warning{% endif %}">
+                    ${{ "%.2f"|format(balance.balance) }}
+                </h5>
+                <p class="mb-0">Balance</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información adicional -->
+{% if balance.otros_ingresos > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Desglose de ingresos:</strong> 
+            Ventas: ${{ "%.2f"|format(balance.ingresos_ventas) }} + 
+            Otros ingresos: ${{ "%.2f"|format(balance.otros_ingresos) }} = 
+            Total: ${{ "%.2f"|format(balance.ingresos_brutos) }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Margen de ganancia -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-percent"></i> Margen de Ganancia
+                </h5>
+                {% set margen = (balance.ganancias_netas / balance.ingresos_ventas * 100) if balance.ingresos_ventas > 0 else 0 %}
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="h4 mb-0">{{ "%.1f"|format(margen) }}%</span>
+                    <div class="progress" style="width: 60%; height: 10px;">
+                        <div class="progress-bar 
+                             {% if margen >= 30 %}bg-success
+                             {% elif margen >= 15 %}bg-warning
+                             {% else %}bg-danger{% endif %}" 
+                             style="width: {{ margen if margen <= 100 else 100 }}%"></div>
+                    </div>
+                </div>
+                <small class="text-muted">
+                    {% if margen >= 30 %}Excelente margen
+                    {% elif margen >= 15 %}Margen aceptable
+                    {% else %}Margen bajo{% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-exclamation-triangle"></i> Stock Bajo
+                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="h4 mb-0 {% if productos_bajo > 0 %}text-warning{% else %}text-success{% endif %}">
+                        {{ productos_bajo }}
+                    </span>
+                    <a href="{{ url_for('reportes') }}" class="btn btn-outline-primary btn-sm">
+                        Ver detalles
+                    </a>
+                </div>
+                <small class="text-muted">
+                    {% if productos_bajo == 0 %}
+                        Todos los productos tienen stock suficiente
+                    {% else %}
+                        productos necesitan reposición
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Movimientos recientes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Movimientos Recientes
+                </h5>
+                <a href="{{ url_for('movimientos') }}" class="btn btn-outline-primary btn-sm">
+                    Ver todos
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if movimientos %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mov in movimientos %}
+                            <tr>
+                                <td>
+                                    <small>{{ mov.fecha[:16] if mov.fecha else '' }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ mov.producto_nombre or 'Producto eliminado' }}</strong>
+                                    {% if mov.producto_codigo %}
+                                        <br><small class="text-muted">{{ mov.producto_codigo }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if mov.tipo == 'Entrada' %}bg-success
+                                        {% elif mov.tipo == 'Salida' %}bg-danger
+                                        {% else %}bg-warning{% endif %}">
+                                        {{ mov.tipo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ "%.1f"|format(mov.cantidad) }}</strong>
+                                </td>
+                                <td>
+                                    <small>{{ mov.usuario or 'Sistema' }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p>No hay movimientos registrados aún</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accesos rápidos (móvil) -->
+<div class="d-block d-md-none">
+    <div class="row mt-4">
+        <div class="col-6 mb-2">
+            <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-plus-circle"></i><br>
+                <small>Producto</small>
+            </a>
+        </div>
+        <div class="col-6 mb-2">
+            <a href="{{ url_for('nuevo_movimiento') }}" class="btn btn-success btn-lg w-100">
+                <i class="bi bi-arrow-left-right"></i><br>
+                <small>Movimiento</small>
+            </a>
+        </div>
+        <div class="col-6 mb-2">
+            <a href="{{ url_for('nueva_finanza') }}" class="btn btn-info btn-lg w-100">
+                <i class="bi bi-currency-dollar"></i><br>
+                <small>Finanza</small>
+            </a>
+        </div>
+        <div class="col-6 mb-2">
+            <a href="{{ url_for('reportes') }}" class="btn btn-warning btn-lg w-100">
+                <i class="bi bi-graph-up"></i><br>
+                <small>Reportes</small>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Botón flotante para escritorio -->
+<div class="d-none d-md-block">
+    <div class="dropup">
+        <button class="btn btn-primary btn-floating dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{{ url_for('nuevo_producto') }}">
+                <i class="bi bi-box"></i> Nuevo Producto
+            </a></li>
+            <li><a class="dropdown-item" href="{{ url_for('nuevo_movimiento') }}">
+                <i class="bi bi-arrow-left-right"></i> Nuevo Movimiento
+            </a></li>
+            <li><a class="dropdown-item" href="{{ url_for('nueva_finanza') }}">
+                <i class="bi bi-currency-dollar"></i> Nueva Finanza
+            </a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Finanza - Sistema Stock & Finanzas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('finanzas') }}" class="btn btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-currency-dollar"></i> Registrar Finanza
+            </h1>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" id="form-finanza">
+                    <!-- Tipo de finanza -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Tipo de Finanza *</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tipo" id="ingreso" value="Ingreso" checked onchange="cambiarTipo()">
+                            <label class="btn btn-outline-success" for="ingreso">
+                                <i class="bi bi-arrow-up-circle"></i><br>
+                                <strong>Ingreso</strong><br>
+                                <small>Dinero que entra</small>
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="tipo" id="egreso" value="Egreso" onchange="cambiarTipo()">
+                            <label class="btn btn-outline-danger" for="egreso">
+                                <i class="bi bi-arrow-down-circle"></i><br>
+                                <strong>Egreso</strong><br>
+                                <small>Dinero que sale</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Monto -->
+                    <div class="mb-4">
+                        <label for="monto" class="form-label fw-bold">Monto *</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="monto" name="monto" 
+                                   step="0.01" min="0.01" required placeholder="0.00"
+                                   oninput="actualizarVistaPrevia()">
+                        </div>
+                        <div class="form-text">Ingrese el monto sin el signo de peso</div>
+                    </div>
+
+                    <!-- Concepto -->
+                    <div class="mb-4">
+                        <label for="concepto" class="form-label fw-bold">Concepto *</label>
+                        <input type="text" class="form-control" id="concepto" name="concepto" required
+                               placeholder="Ej: Pago de alquiler, Venta de servicios, etc."
+                               oninput="actualizarVistaPrevia()">
+                        <div class="form-text">Descripción breve del motivo de la transacción</div>
+                    </div>
+
+                    <!-- Categoría -->
+                    <div class="mb-4">
+                        <label for="categoria" class="form-label fw-bold">Categoría</label>
+                        <select class="form-select" id="categoria" name="categoria" onchange="actualizarVistaPrevia()">
+                            <option value="">Seleccione una categoría...</option>
+                            <!-- Opciones se llenan dinámicamente -->
+                        </select>
+                        <div class="form-text">Ayuda a organizar y analizar tus finanzas</div>
+                    </div>
+
+                    <!-- Vista previa -->
+                    <div id="vista-previa" class="mb-4" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="bi bi-eye"></i> Vista Previa</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span id="preview-badge" class="badge bg-success me-2">Ingreso</span>
+                                        <span id="preview-concepto" class="fw-bold">-</span>
+                                    </div>
+                                    <div>
+                                        <span id="preview-monto" class="h5 mb-0 text-success">+$0.00</span>
+                                    </div>
+                                </div>
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Categoría:</small>
+                                    <small id="preview-categoria" class="text-muted">Sin categoría</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Impacto en el balance -->
+                    <div id="impacto-balance" class="mb-4" style="display: none;">
+                        <div class="alert alert-info">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Impacto en el balance:</strong>
+                                    <span id="texto-impacto">El balance aumentará en $0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('finanzas') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success" id="btn-guardar">
+                            <i class="bi bi-plus-circle"></i> Registrar Ingreso
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ejemplos de categorías (modal de ayuda) -->
+<div class="modal fade" id="modalEjemplos" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ejemplos de Categorías</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-6">
+                        <h6 class="text-success">Ingresos</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="badge bg-light text-dark me-1">Servicios</span> Servicios profesionales</li>
+                            <li><span class="badge bg-light text-dark me-1">Otros</span> Intereses, alquileres</li>
+                        </ul>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-danger">Egresos</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="badge bg-light text-dark me-1">Gastos</span> Alquiler, servicios</li>
+                            <li><span class="badge bg-light text-dark me-1">Impuestos</span> Impuestos varios</li>
+                            <li><span class="badge bg-light text-dark me-1">Servicios</span> Marketing, web</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let tipoActual = 'Ingreso';
+
+const categoriasIngreso = [
+    { value: 'Servicios', text: 'Servicios' },
+    { value: 'Otros', text: 'Otros' }
+];
+
+const categoriasEgreso = [
+    { value: 'Gastos', text: 'Gastos' },
+    { value: 'Servicios', text: 'Servicios' },
+    { value: 'Impuestos', text: 'Impuestos' },
+    { value: 'Otros', text: 'Otros' }
+];
+
+function cambiarTipo() {
+    tipoActual = document.querySelector('input[name="tipo"]:checked').value;
+    
+    const btnGuardar = document.getElementById('btn-guardar');
+    const selectCategoria = document.getElementById('categoria');
+    
+    // Actualizar botón
+    if (tipoActual === 'Ingreso') {
+        btnGuardar.className = 'btn btn-success';
+        btnGuardar.innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Ingreso';
+    } else {
+        btnGuardar.className = 'btn btn-danger';
+        btnGuardar.innerHTML = '<i class="bi bi-dash-circle"></i> Registrar Egreso';
+    }
+    
+    // Actualizar opciones de categoría
+    selectCategoria.innerHTML = '<option value="">Seleccione una categoría...</option>';
+    
+    const categorias = tipoActual === 'Ingreso' ? categoriasIngreso : categoriasEgreso;
+    categorias.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.value;
+        option.textContent = cat.text;
+        selectCategoria.appendChild(option);
+    });
+    
+    actualizarVistaPrevia();
+}
+
+function actualizarVistaPrevia() {
+    const monto = parseFloat(document.getElementById('monto').value || 0);
+    const concepto = document.getElementById('concepto').value.trim();
+    const categoria = document.getElementById('categoria').value;
+    
+    if (monto > 0 && concepto) {
+        // Mostrar vista previa
+        document.getElementById('vista-previa').style.display = 'block';
+        document.getElementById('impacto-balance').style.display = 'block';
+        
+        // Actualizar elementos de vista previa
+        const badge = document.getElementById('preview-badge');
+        const montoEl = document.getElementById('preview-monto');
+        
+        badge.textContent = tipoActual;
+        badge.className = `badge ${tipoActual === 'Ingreso' ? 'bg-success' : 'bg-danger'} me-2`;
+        
+        document.getElementById('preview-concepto').textContent = concepto;
+        
+        montoEl.textContent = `${tipoActual === 'Ingreso' ? '+' : '-'}$${monto.toFixed(2)}`;
+        montoEl.className = `h5 mb-0 ${tipoActual === 'Ingreso' ? 'text-success' : 'text-danger'}`;
+        
+        document.getElementById('preview-categoria').textContent = categoria || 'Sin categoría';
+        
+        // Actualizar impacto
+        const textoImpacto = document.getElementById('texto-impacto');
+        if (tipoActual === 'Ingreso') {
+            textoImpacto.textContent = `El balance aumentará en $${monto.toFixed(2)}`;
+            textoImpacto.parentElement.parentElement.className = 'alert alert-success';
+        } else {
+            textoImpacto.textContent = `El balance disminuirá en $${monto.toFixed(2)}`;
+            textoImpacto.parentElement.parentElement.className = 'alert alert-warning';
+        }
+    } else {
+        document.getElementById('vista-previa').style.display = 'none';
+        document.getElementById('impacto-balance').style.display = 'none';
+    }
+}
+
+// Validación del formulario
+document.getElementById('form-finanza').addEventListener('submit', function(e) {
+    const monto = parseFloat(document.getElementById('monto').value || 0);
+    const concepto = document.getElementById('concepto').value.trim();
+    
+    if (monto <= 0) {
+        alert('El monto debe ser mayor a 0');
+        e.preventDefault();
+        return;
+    }
+    
+    if (!concepto) {
+        alert('Debe ingresar un concepto');
+        e.preventDefault();
+        return;
+    }
+    
+    // Confirmación para montos grandes
+    if (monto > 10000) {
+        if (!confirm(`¿Está seguro del monto $${monto.toFixed(2)}? Es una cantidad considerable.`)) {
+            e.preventDefault();
+            return;
+        }
+    }
+});
+
+// Auto-capitalización del concepto
+document.getElementById('concepto').addEventListener('input', function() {
+    let value = this.value;
+    if (value.length === 1) {
+        this.value = value.charAt(0).toUpperCase();
+    }
+});
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    cambiarTipo();
+    
+    // Focus en el monto
+    document.getElementById('monto').focus();
+});
+
+// Atajos de teclado
+document.addEventListener('keydown', function(e) {
+    if (e.altKey && e.key === '1') {
+        document.getElementById('ingreso').checked = true;
+        cambiarTipo();
+        e.preventDefault();
+    } else if (e.altKey && e.key === '2') {
+        document.getElementById('egreso').checked = true;
+        cambiarTipo();
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

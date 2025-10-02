@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Movimientos - Sistema Stock & Finanzas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-arrow-left-right"></i> Movimientos de Stock
+            </h1>
+            <a href="{{ url_for('nuevo_movimiento') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Nuevo
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros rápidos -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="filtro" id="todos" checked onclick="filtrarMovimientos('todos')">
+                    <label class="btn btn-outline-primary" for="todos">Todos</label>
+                    
+                    <input type="radio" class="btn-check" name="filtro" id="entradas" onclick="filtrarMovimientos('Entrada')">
+                    <label class="btn btn-outline-success" for="entradas">Entradas</label>
+                    
+                    <input type="radio" class="btn-check" name="filtro" id="salidas" onclick="filtrarMovimientos('Salida')">
+                    <label class="btn btn-outline-danger" for="salidas">Salidas</label>
+                    
+                    <input type="radio" class="btn-check" name="filtro" id="ajustes" onclick="filtrarMovimientos('Ajuste')">
+                    <label class="btn btn-outline-warning" for="ajustes">Ajustes</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de movimientos -->
+<div class="row">
+    <div class="col-12">
+        {% if movimientos %}
+        <!-- Vista de escritorio -->
+        <div class="d-none d-md-block">
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="tabla-movimientos">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                                <th>Comentario</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mov in movimientos %}
+                            <tr data-tipo="{{ mov.tipo }}">
+                                <td>
+                                    <div>{{ mov.fecha[:10] if mov.fecha else '' }}</div>
+                                    <small class="text-muted">{{ mov.fecha[11:16] if mov.fecha and mov.fecha|length > 10 else '' }}</small>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ mov.producto_nombre or 'Producto eliminado' }}</strong>
+                                        {% if mov.producto_codigo %}
+                                        <br><small class="text-muted">{{ mov.producto_codigo }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if mov.tipo == 'Entrada' %}bg-success
+                                        {% elif mov.tipo == 'Salida' %}bg-danger
+                                        {% else %}bg-warning text-dark{% endif %}">
+                                        <i class="bi 
+                                            {% if mov.tipo == 'Entrada' %}bi-arrow-down
+                                            {% elif mov.tipo == 'Salida' %}bi-arrow-up
+                                            {% else %}bi-arrow-repeat{% endif %}"></i>
+                                        {{ mov.tipo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong class="
+                                        {% if mov.tipo == 'Entrada' %}text-success
+                                        {% elif mov.tipo == 'Salida' %}text-danger
+                                        {% else %}text-warning{% endif %}">
+                                        {% if mov.tipo == 'Entrada' %}+{% elif mov.tipo == 'Salida' %}-{% endif %}{{ "%.1f"|format(mov.cantidad) }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;" title="{{ mov.comentario or '-' }}">
+                                        {{ mov.comentario or '-' }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>{{ mov.usuario or 'Sistema' }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista móvil -->
+        <div class="d-block d-md-none" id="movimientos-mobile">
+            {% for mov in movimientos %}
+            <div class="card mobile-card" data-tipo="{{ mov.tipo }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title mb-1">{{ mov.producto_nombre or 'Producto eliminado' }}</h6>
+                            {% if mov.producto_codigo %}
+                            <small class="text-muted">{{ mov.producto_codigo }}</small>
+                            {% endif %}
+                        </div>
+                        <span class="badge 
+                            {% if mov.tipo == 'Entrada' %}bg-success
+                            {% elif mov.tipo == 'Salida' %}bg-danger
+                            {% else %}bg-warning text-dark{% endif %} ms-2">
+                            {{ mov.tipo }}
+                        </span>
+                    </div>
+                    
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <small class="text-muted">Cantidad</small>
+                            <div>
+                                <strong class="
+                                    {% if mov.tipo == 'Entrada' %}text-success
+                                    {% elif mov.tipo == 'Salida' %}text-danger
+                                    {% else %}text-warning{% endif %}">
+                                    {% if mov.tipo == 'Entrada' %}+{% elif mov.tipo == 'Salida' %}-{% endif %}{{ "%.1f"|format(mov.cantidad) }}
+                                </strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Fecha</small>
+                            <div>
+                                {{ mov.fecha[:10] if mov.fecha else '' }}
+                                <br><small>{{ mov.fecha[11:16] if mov.fecha and mov.fecha|length > 10 else '' }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if mov.comentario %}
+                    <div class="mb-2">
+                        <small class="text-muted">Comentario:</small>
+                        <div>{{ mov.comentario }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="text-end">
+                        <small class="text-muted">por {{ mov.usuario or 'Sistema' }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-arrow-left-right fs-1 text-muted mb-3"></i>
+                <h5 class="text-muted">No hay movimientos registrados</h5>
+                <p class="text-muted">Los movimientos de entrada y salida aparecerán aquí</p>
+                <a href="{{ url_for('nuevo_movimiento') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Registrar Movimiento
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Resumen de movimientos (solo si hay datos) -->
+{% if movimientos %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-graph-up"></i> Resumen del Día</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="h5 mb-0 text-success" id="total-entradas">0</div>
+                        <small class="text-muted">Entradas</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h5 mb-0 text-danger" id="total-salidas">0</div>
+                        <small class="text-muted">Salidas</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="h5 mb-0 text-warning" id="total-ajustes">0</div>
+                        <small class="text-muted">Ajustes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Botón flotante para móvil -->
+<a href="{{ url_for('nuevo_movimiento') }}" class="btn btn-primary btn-floating d-block d-md-none">
+    <i class="bi bi-plus-lg"></i>
+</a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filtrarMovimientos(tipo) {
+    const filas = document.querySelectorAll('#tabla-movimientos tbody tr');
+    const tarjetas = document.querySelectorAll('#movimientos-mobile .mobile-card');
+    
+    // Filtrar tabla de escritorio
+    filas.forEach(fila => {
+        const tipoFila = fila.getAttribute('data-tipo');
+        if (tipo === 'todos' || tipoFila === tipo) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+    
+    // Filtrar tarjetas móviles
+    tarjetas.forEach(tarjeta => {
+        const tipoTarjeta = tarjeta.getAttribute('data-tipo');
+        if (tipo === 'todos' || tipoTarjeta === tipo) {
+            tarjeta.style.display = '';
+        } else {
+            tarjeta.style.display = 'none';
+        }
+    });
+}
+
+function calcularResumen() {
+    const movimientos = {{ movimientos | tojson }};
+    
+    let entradas = 0, salidas = 0, ajustes = 0;
+    
+    // Filtrar movimientos del día actual
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    movimientos.forEach(mov => {
+        const fechaMov = mov.fecha ? mov.fecha.split('T')[0] : '';
+        if (fechaMov === hoy) {
+            if (mov.tipo === 'Entrada') entradas++;
+            else if (mov.tipo === 'Salida') salidas++;
+            else if (mov.tipo === 'Ajuste') ajustes++;
+        }
+    });
+    
+    // Actualizar elementos si existen
+    const totalEntradas = document.getElementById('total-entradas');
+    const totalSalidas = document.getElementById('total-salidas');
+    const totalAjustes = document.getElementById('total-ajustes');
+    
+    if (totalEntradas) totalEntradas.textContent = entradas;
+    if (totalSalidas) totalSalidas.textContent = salidas;
+    if (totalAjustes) totalAjustes.textContent = ajustes;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    calcularResumen();
+});
+</script>
+{% endblock %}

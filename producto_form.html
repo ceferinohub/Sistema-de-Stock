@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}{{ titulo }} - Sistema Stock & Finanzas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('productos') }}" class="btn btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-box"></i> {{ titulo }}
+            </h1>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" autocomplete="off">
+                    <!-- Información básica -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">
+                                <i class="bi bi-info-circle"></i> Información Básica
+                            </h5>
+                            <hr>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="codigo" class="form-label">Código</label>
+                            <input type="text" class="form-control" id="codigo" name="codigo" 
+                                   value="{{ producto.codigo if producto else '' }}"
+                                   placeholder="SKU o código interno">
+                            <div class="form-text">Código único del producto (opcional)</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="categoria" class="form-label">Categoría</label>
+                            <input type="text" class="form-control" id="categoria" name="categoria" 
+                                   value="{{ producto.categoria if producto else '' }}"
+                                   placeholder="Ej: Electrónicos, Ropa, etc.">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Producto *</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required
+                               value="{{ producto.nombre if producto else '' }}"
+                               placeholder="Nombre descriptivo del producto">
+                    </div>
+
+                    <!-- Precios y márgenes -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">
+                                <i class="bi bi-currency-dollar"></i> Precios y Márgenes
+                            </h5>
+                            <hr>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label for="precio_compra" class="form-label">Precio de Compra *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="precio_compra" name="precio_compra" 
+                                       step="0.01" min="0" required
+                                       value="{{ '%.2f'|format(producto.precio_compra) if producto else '' }}"
+                                       oninput="calcularPrecio('precio_compra')">
+                            </div>
+                            <div class="form-text">Costo unitario del producto</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="margen_ganancia" class="form-label">Margen de Ganancia %</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="margen_ganancia" name="margen_ganancia" 
+                                       step="0.1" min="0"
+                                       value="{{ '%.1f'|format(producto.margen_ganancia) if producto else '' }}"
+                                       oninput="calcularPrecio('margen')">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text">Se calcula automáticamente el precio de venta</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="precio_venta" class="form-label">Precio de Venta *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="precio_venta" name="precio_venta" 
+                                       step="0.01" min="0" required
+                                       value="{{ '%.2f'|format(producto.precio_venta) if producto else '' }}"
+                                       oninput="calcularPrecio('precio_venta')">
+                            </div>
+                            <div class="form-text">Precio al público</div>
+                        </div>
+                    </div>
+
+                    <!-- Indicadores de rentabilidad -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-light border">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="text-muted small">Ganancia por unidad</div>
+                                        <div class="h6 mb-0" id="ganancia_unitaria">$0.00</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted small">Margen calculado</div>
+                                        <div class="h6 mb-0" id="margen_calculado">0.0%</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted small">Estado del margen</div>
+                                        <div class="h6 mb-0">
+                                            <span id="estado_margen" class="badge bg-secondary">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">
+                                <i class="bi bi-boxes"></i> Inventario
+                            </h5>
+                            <hr>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="stock_inicial" class="form-label">
+                                {% if producto %}Stock Actual{% else %}Stock Inicial{% endif %}
+                            </label>
+                            <input type="number" class="form-control" id="stock_inicial" name="stock_inicial" 
+                                   step="0.1" min="0" required
+                                   value="{{ '%.1f'|format(producto.stock_actual if producto else 0) }}">
+                            <div class="form-text">
+                                {% if producto %}
+                                Cantidad actual en inventario
+                                {% else %}
+                                Cantidad inicial del producto
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="stock_minimo" class="form-label">Stock Mínimo</label>
+                            <input type="number" class="form-control" id="stock_minimo" name="stock_minimo" 
+                                   step="0.1" min="0" required
+                                   value="{{ '%.1f'|format(producto.stock_minimo) if producto else '' }}">
+                            <div class="form-text">Alerta cuando el stock llegue a este nivel</div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('productos') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> 
+                                    {% if producto %}Actualizar{% else %}Guardar{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function calcularPrecio(campo) {
+    const precioCompra = parseFloat(document.getElementById('precio_compra').value || 0);
+    const precioVenta = parseFloat(document.getElementById('precio_venta').value || 0);
+    const margen = parseFloat(document.getElementById('margen_ganancia').value || 0);
+    
+    let nuevoPrecioVenta = precioVenta;
+    let nuevoMargen = margen;
+    
+    if (campo === 'margen' && precioCompra > 0) {
+        nuevoPrecioVenta = precioCompra * (1 + margen / 100);
+        document.getElementById('precio_venta').value = nuevoPrecioVenta.toFixed(2);
+    } else if (campo === 'precio_venta' && precioCompra > 0 && precioVenta > 0) {
+        nuevoMargen = ((precioVenta - precioCompra) / precioCompra) * 100;
+        document.getElementById('margen_ganancia').value = nuevoMargen.toFixed(1);
+    } else if (campo === 'precio_compra' && precioCompra > 0) {
+        if (margen > 0) {
+            nuevoPrecioVenta = precioCompra * (1 + margen / 100);
+            document.getElementById('precio_venta').value = nuevoPrecioVenta.toFixed(2);
+        }
+        if (precioVenta > 0) {
+            nuevoMargen = ((precioVenta - precioCompra) / precioCompra) * 100;
+            document.getElementById('margen_ganancia').value = nuevoMargen.toFixed(1);
+        }
+    }
+    
+    actualizarIndicadores();
+}
+
+function actualizarIndicadores() {
+    const precioCompra = parseFloat(document.getElementById('precio_compra').value || 0);
+    const precioVenta = parseFloat(document.getElementById('precio_venta').value || 0);
+    
+    const gananciaUnitaria = precioVenta - precioCompra;
+    const margenCalculado = precioCompra > 0 ? ((precioVenta - precioCompra) / precioCompra) * 100 : 0;
+    
+    // Actualizar valores
+    document.getElementById('ganancia_unitaria').textContent = `$${gananciaUnitaria.toFixed(2)}`;
+    document.getElementById('margen_calculado').textContent = `${margenCalculado.toFixed(1)}%`;
+    
+    // Actualizar estado del margen
+    const estadoMargen = document.getElementById('estado_margen');
+    if (margenCalculado >= 30) {
+        estadoMargen.textContent = 'Excelente';
+        estadoMargen.className = 'badge bg-success';
+    } else if (margenCalculado >= 15) {
+        estadoMargen.textContent = 'Bueno';
+        estadoMargen.className = 'badge bg-warning';
+    } else if (margenCalculado > 0) {
+        estadoMargen.textContent = 'Bajo';
+        estadoMargen.className = 'badge bg-danger';
+    } else {
+        estadoMargen.textContent = 'Pérdida';
+        estadoMargen.className = 'badge bg-dark';
+    }
+}
+
+// Calcular al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarIndicadores();
+    
+    // Auto-calcular cuando se modifiquen los campos
+    ['precio_compra', 'precio_venta', 'margen_ganancia'].forEach(id => {
+        document.getElementById(id).addEventListener('input', actualizarIndicadores);
+    });
+});
+
+// Validación del formulario
+document.querySelector('form').addEventListener('submit', function(e) {
+    const precioCompra = parseFloat(document.getElementById('precio_compra').value || 0);
+    const precioVenta = parseFloat(document.getElementById('precio_venta').value || 0);
+    
+    if (precioVenta < precioCompra) {
+        if (!confirm('El precio de venta es menor al costo. Esto generará pérdidas. ¿Continuar?')) {
+            e.preventDefault();
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo Movimiento - Sistema Stock & Finanzas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('movimientos') }}" class="btn btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="h3 mb-0">
+                <i class="bi bi-arrow-left-right"></i> Nuevo Movimiento
+            </h1>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" id="form-movimiento">
+                    <!-- Tipo de movimiento -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Tipo de Movimiento</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tipo" id="entrada" value="Entrada" checked onchange="cambiarTipo()">
+                            <label class="btn btn-outline-success" for="entrada">
+                                <i class="bi bi-arrow-down"></i> Entrada
+                                <br><small>Agregar stock</small>
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="tipo" id="salida" value="Salida" onchange="cambiarTipo()">
+                            <label class="btn btn-outline-danger" for="salida">
+                                <i class="bi bi-arrow-up"></i> Salida
+                                <br><small>Reducir stock</small>
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="tipo" id="ajuste" value="Ajuste" onchange="cambiarTipo()">
+                            <label class="btn btn-outline-warning" for="ajuste">
+                                <i class="bi bi-arrow-repeat"></i> Ajuste
+                                <br><small>Corregir stock</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Selección de producto -->
+                    <div class="mb-4">
+                        <label for="producto_id" class="form-label fw-bold">Producto *</label>
+                        <select class="form-select" id="producto_id" name="producto_id" required onchange="mostrarInfoProducto()">
+                            <option value="">Seleccione un producto...</option>
+                            {% for producto in productos %}
+                            <option value="{{ producto.id }}" 
+                                    data-nombre="{{ producto.nombre }}"
+                                    data-stock="{{ producto.stock_actual }}"
+                                    data-minimo="{{ producto.stock_minimo }}"
+                                    data-precio-venta="{{ producto.precio_venta }}"
+                                    data-precio-compra="{{ producto.precio_compra }}">
+                                {{ producto.nombre }} 
+                                {% if producto.codigo %}({{ producto.codigo }}){% endif %}
+                                - Stock: {{ "%.1f"|format(producto.stock_actual) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        
+                        <!-- Información del producto seleccionado -->
+                        <div id="info-producto" class="mt-2" style="display: none;">
+                            <div class="alert alert-light border">
+                                <div class="row">
+                                    <div class="col-6 col-md-3">
+                                        <small class="text-muted">Stock actual</small>
+                                        <div class="fw-bold" id="stock-actual">-</div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <small class="text-muted">Stock mínimo</small>
+                                        <div id="stock-minimo">-</div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <small class="text-muted">P. Venta</small>
+                                        <div id="precio-venta">-</div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <small class="text-muted">P. Compra</small>
+                                        <div id="precio-compra">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cantidad -->
+                    <div class="mb-4">
+                        <label for="cantidad" class="form-label fw-bold">
+                            <span id="label-cantidad">Cantidad *</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="cantidad" name="cantidad" 
+                                   step="0.1" min="0.1" required
+                                   oninput="calcularResultado()" placeholder="0.0">
+                            <span class="input-group-text">unidades</span>
+                        </div>
+                        <div id="help-cantidad" class="form-text">
+                            Ingrese la cantidad de unidades
+                        </div>
+                        
+                        <!-- Alertas de stock -->
+                        <div id="alerta-stock" class="mt-2" style="display: none;"></div>
+                    </div>
+
+                    <!-- Resultado del movimiento -->
+                    <div id="resultado-movimiento" class="mb-4" style="display: none;">
+                        <div class="alert alert-info border-info">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Stock resultante:</strong>
+                                    <span id="stock-resultante">-</span>
+                                </div>
+                                <div id="impacto-financiero" class="text-end">
+                                    <small class="text-muted">Impacto financiero</small>
+                                    <div id="monto-impacto" class="fw-bold">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comentario -->
+                    <div class="mb-4">
+                        <label for="comentario" class="form-label">Comentario</label>
+                        <textarea class="form-control" id="comentario" name="comentario" rows="3" 
+                                  placeholder="Descripción opcional del movimiento..."></textarea>
+                    </div>
+
+                    <!-- Usuario -->
+                    <div class="mb-4">
+                        <label for="usuario" class="form-label">Usuario</label>
+                        <input type="text" class="form-control" id="usuario" name="usuario" 
+                               value="Web" placeholder="Nombre del usuario">
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('movimientos') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="btn-guardar">
+                            <i class="bi bi-check-circle"></i> Registrar Movimiento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let tipoActual = 'Entrada';
+let productoActual = null;
+
+function cambiarTipo() {
+    tipoActual = document.querySelector('input[name="tipo"]:checked').value;
+    
+    // Actualizar textos según el tipo
+    const labelCantidad = document.getElementById('label-cantidad');
+    const helpCantidad = document.getElementById('help-cantidad');
+    const btnGuardar = document.getElementById('btn-guardar');
+    
+    if (tipoActual === 'Entrada') {
+        labelCantidad.textContent = 'Cantidad a ingresar *';
+        helpCantidad.textContent = 'Cantidad de unidades que ingresan al stock';
+        btnGuardar.className = 'btn btn-success';
+        btnGuardar.innerHTML = '<i class="bi bi-arrow-down"></i> Registrar Entrada';
+    } else if (tipoActual === 'Salida') {
+        labelCantidad.textContent = 'Cantidad a retirar *';
+        helpCantidad.textContent = 'Cantidad de unidades que salen del stock';
+        btnGuardar.className = 'btn btn-danger';
+        btnGuardar.innerHTML = '<i class="bi bi-arrow-up"></i> Registrar Salida';
+    } else {
+        labelCantidad.textContent = 'Nuevo stock total *';
+        helpCantidad.textContent = 'Stock total que quedará después del ajuste';
+        btnGuardar.className = 'btn btn-warning';
+        btnGuardar.innerHTML = '<i class="bi bi-arrow-repeat"></i> Registrar Ajuste';
+    }
+    
+    calcularResultado();
+}
+
+function mostrarInfoProducto() {
+    const select = document.getElementById('producto_id');
+    const option = select.selectedOptions[0];
+    const infoDiv = document.getElementById('info-producto');
+    
+    if (!option || !option.value) {
+        infoDiv.style.display = 'none';
+        productoActual = null;
+        return;
+    }
+    
+    productoActual = {
+        id: option.value,
+        nombre: option.dataset.nombre,
+        stock: parseFloat(option.dataset.stock),
+        minimo: parseFloat(option.dataset.minimo),
+        precioVenta: parseFloat(option.dataset.precioVenta),
+        precioCompra: parseFloat(option.dataset.precioCompra)
+    };
+    
+    // Mostrar información
+    document.getElementById('stock-actual').textContent = productoActual.stock.toFixed(1);
+    document.getElementById('stock-minimo').textContent = productoActual.minimo.toFixed(1);
+    document.getElementById('precio-venta').textContent = `${productoActual.precioVenta.toFixed(2)}`;
+    document.getElementById('precio-compra').textContent = `${productoActual.precioCompra.toFixed(2)}`;
+    
+    // Aplicar color según estado del stock
+    const stockActualEl = document.getElementById('stock-actual');
+    if (productoActual.stock <= 0) {
+        stockActualEl.className = 'fw-bold text-danger';
+    } else if (productoActual.stock <= productoActual.minimo) {
+        stockActualEl.className = 'fw-bold text-warning';
+    } else {
+        stockActualEl.className = 'fw-bold text-success';
+    }
+    
+    infoDiv.style.display = 'block';
+    calcularResultado();
+}
+
+function calcularResultado() {
+    if (!productoActual) {
+        document.getElementById('resultado-movimiento').style.display = 'none';
+        document.getElementById('alerta-stock').style.display = 'none';
+        return;
+    }
+    
+    const cantidad = parseFloat(document.getElementById('cantidad').value || 0);
+    if (cantidad <= 0) {
+        document.getElementById('resultado-movimiento').style.display = 'none';
+        document.getElementById('alerta-stock').style.display = 'none';
+        return;
+    }
+    
+    let stockResultante;
+    let impactoFinanciero = 0;
+    let tipoImpacto = '';
+    
+    // Calcular stock resultante según el tipo
+    if (tipoActual === 'Entrada') {
+        stockResultante = productoActual.stock + cantidad;
+        impactoFinanciero = cantidad * productoActual.precioCompra;
+        tipoImpacto = 'Egreso (Compra)';
+    } else if (tipoActual === 'Salida') {
+        stockResultante = productoActual.stock - cantidad;
+        impactoFinanciero = cantidad * productoActual.precioVenta;
+        tipoImpacto = 'Ingreso (Venta)';
+    } else { // Ajuste
+        stockResultante = cantidad;
+        // Para ajustes no calculamos impacto financiero automático
+    }
+    
+    // Mostrar resultado
+    document.getElementById('stock-resultante').textContent = stockResultante.toFixed(1);
+    
+    if (tipoActual !== 'Ajuste' && impactoFinanciero > 0) {
+        document.getElementById('monto-impacto').textContent = `${impactoFinanciero.toFixed(2)}`;
+        document.getElementById('monto-impacto').className = `fw-bold ${tipoActual === 'Entrada' ? 'text-danger' : 'text-success'}`;
+        document.getElementById('impacto-financiero').querySelector('.text-muted').textContent = tipoImpacto;
+        document.getElementById('impacto-financiero').style.display = 'block';
+    } else {
+        document.getElementById('impacto-financiero').style.display = 'none';
+    }
+    
+    document.getElementById('resultado-movimiento').style.display = 'block';
+    
+    // Mostrar alertas
+    mostrarAlertas(stockResultante);
+}
+
+function mostrarAlertas(stockResultante) {
+    const alertaDiv = document.getElementById('alerta-stock');
+    
+    if (tipoActual === 'Salida' && stockResultante < 0) {
+        alertaDiv.innerHTML = `
+            <div class="alert alert-danger alert-sm">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>¡Atención!</strong> El stock resultante será negativo (${stockResultante.toFixed(1)})
+            </div>
+        `;
+        alertaDiv.style.display = 'block';
+    } else if (stockResultante <= productoActual.minimo && stockResultante > 0) {
+        alertaDiv.innerHTML = `
+            <div class="alert alert-warning alert-sm">
+                <i class="bi bi-exclamation-circle"></i>
+                Stock quedará por debajo del mínimo (${productoActual.minimo.toFixed(1)})
+            </div>
+        `;
+        alertaDiv.style.display = 'block';
+    } else if (stockResultante <= 0) {
+        alertaDiv.innerHTML = `
+            <div class="alert alert-danger alert-sm">
+                <i class="bi bi-exclamation-triangle"></i>
+                Producto quedará sin stock
+            </div>
+        `;
+        alertaDiv.style.display = 'block';
+    } else {
+        alertaDiv.style.display = 'none';
+    }
+}
+
+// Validación del formulario
+document.getElementById('form-movimiento').addEventListener('submit', function(e) {
+    if (!productoActual) {
+        alert('Debe seleccionar un producto');
+        e.preventDefault();
+        return;
+    }
+    
+    const cantidad = parseFloat(document.getElementById('cantidad').value || 0);
+    if (cantidad <= 0) {
+        alert('La cantidad debe ser mayor a 0');
+        e.preventDefault();
+        return;
+    }
+    
+    if (tipoActual === 'Salida') {
+        const stockResultante = productoActual.stock - cantidad;
+        if (stockResultante < 0) {
+            if (!confirm(`El stock quedará negativo (${stockResultante.toFixed(1)}). ¿Continuar?`)) {
+                e.preventDefault();
+                return;
+            }
+        }
+    }
+});
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    cambiarTipo();
+});
+</script>
+{% endblock %}

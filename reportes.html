@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - Sistema Stock & Finanzas{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">
+            <i class="bi bi-graph-up"></i> Reportes y Análisis
+        </h1>
+        <p class="text-muted">Análisis detallado del inventario y finanzas</p>
+    </div>
+</div>
+
+<!-- Productos con stock bajo -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> Productos con Stock Bajo
+                </h5>
+                <span class="badge {% if productos_bajo|length > 0 %}bg-warning{% else %}bg-success{% endif %}">
+                    {{ productos_bajo|length }} productos
+                </span>
+            </div>
+            <div class="card-body">
+                {% if productos_bajo %}
+                <!-- Vista de escritorio -->
+                <div class="d-none d-md-block">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Código</th>
+                                    <th>Stock Actual</th>
+                                    <th>Stock Mínimo</th>
+                                    <th>Sugerido</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for producto in productos_bajo %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ producto.nombre }}</strong>
+                                        {% if producto.categoria %}
+                                        <br><small class="text-muted">{{ producto.categoria }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <code>{{ producto.codigo or '-' }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if producto.stock_actual <= 0 %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ "%.1f"|format(producto.stock_actual) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.1f"|format(producto.stock_minimo) }}</td>
+                                    <td>
+                                        <strong class="text-success">
+                                            {{ "%.1f"|format(producto.stock_minimo * 2) }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        {% if producto.stock_actual <= 0 %}
+                                            <span class="badge bg-danger">Sin stock</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Reponer</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Vista móvil -->
+                <div class="d-block d-md-none">
+                    {% for producto in productos_bajo %}
+                    <div class="card mobile-card border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="card-title mb-1">{{ producto.nombre }}</h6>
+                                    {% if producto.codigo %}
+                                    <small class="text-muted">{{ producto.codigo }}</small>
+                                    {% endif %}
+                                </div>
+                                {% if producto.stock_actual <= 0 %}
+                                    <span class="badge bg-danger">Sin stock</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Stock bajo</span>
+                                {% endif %}
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <small class="text-muted">Actual</small>
+                                    <div class="fw-bold text-warning">{{ "%.1f"|format(producto.stock_actual) }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Mínimo</small>
+                                    <div>{{ "%.1f"|format(producto.stock_minimo) }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Sugerido</small>
+                                    <div class="fw-bold text-success">{{ "%.1f"|format(producto.stock_minimo * 2) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-check-circle fs-1 text-success mb-3"></i>
+                    <h5 class="text-success">¡Perfecto!</h5>
+                    <p class="text-muted">Todos los productos tienen stock suficiente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones rápidas -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-download"></i> Exportar Datos
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-primary" onclick="exportarProductos()">
+                                <i class="bi bi-box"></i> Productos CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-success" onclick="exportarMovimientos()">
+                                <i class="bi bi-arrow-left-right"></i> Movimientos CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-info" onclick="exportarFinanzas()">
+                                <i class="bi bi-currency-dollar"></i> Finanzas CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis rápido -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-calendar-month"></i> Reporte Mensual
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Generar reporte financiero del mes</p>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <select class="form-select form-select-sm" id="mes-reporte">
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <select class="form-select form-select-sm" id="ano-reporte">
+                            <option value="2024">2024</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2026">2026</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-primary btn-sm w-100" onclick="generarReporteMensual()">
+                        <i class="bi bi-download"></i> Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-calendar-range"></i> Reporte por Fechas
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Generar reporte de un período específico</p>
+                <div class="mb-2">
+                    <input type="date" class="form-control form-control-sm" id="fecha-desde" 
+                    value="">
+                </div>
+                <div class="mb-2">
+                    <input type="date" class="form-control form-control-sm" id="fecha-hasta" 
+                    value="">
+                </div>
+                <button class="btn btn-primary btn-sm w-100" onclick="generarReporteRango()">
+                    <i class="bi bi-download"></i> Generar Reporte
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas generales -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart"></i> Estadísticas Generales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="h4 mb-0 text-primary" id="total-productos">-</div>
+                        <small class="text-muted">Total Productos</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="h4 mb-0 text-success" id="productos-ok">-</div>
+                        <small class="text-muted">Stock OK</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="h4 mb-0 text-warning" id="productos-bajo">-</div>
+                        <small class="text-muted">Stock Bajo</small>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3">
+                        <div class="h4 mb-0 text-danger" id="productos-sin">-</div>
+                        <small class="text-muted">Sin Stock</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de carga -->
+<div class="modal fade" id="modalCarga" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="mb-0">Generando reporte...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Establecer mes actual por defecto
+document.addEventListener('DOMContentLoaded', function() {
+    const mesActual = new Date().getMonth() + 1;
+    document.getElementById('mes-reporte').value = mesActual;
+    
+    cargarEstadisticas();
+});
+
+function cargarEstadisticas() {
+    // Simular carga de estadísticas (en la implementación real vendría del servidor)
+    const totalProductos = {{ productos_bajo|length + 50 }}; // Ejemplo
+    const productosBajo = {{ productos_bajo|length }};
+    const productosSin = {{ productos_bajo|selectattr("stock_actual", "equalto", 0)|list|length }};
+    const productosOk = totalProductos - productosBajo;
+    
+    document.getElementById('total-productos').textContent = totalProductos;
+    document.getElementById('productos-ok').textContent = productosOk;
+    document.getElementById('productos-bajo').textContent = productosBajo;
+    document.getElementById('productos-sin').textContent = productosSin;
+}
+
+function mostrarCarga() {
+    const modal = new bootstrap.Modal(document.getElementById('modalCarga'));
+    modal.show();
+    return modal;
+}
+
+function exportarProductos() {
+    const modal = mostrarCarga();
+    
+    // Simular proceso de exportación
+    setTimeout(() => {
+        modal.hide();
+        // En la implementación real, aquí se haría la descarga
+        window.open('/api/exportar/productos', '_blank');
+    }, 2000);
+}
+
+function exportarMovimientos() {
+    const modal = mostrarCarga();
+    
+    setTimeout(() => {
+        modal.hide();
+        window.open('/api/exportar/movimientos', '_blank');
+    }, 2000);
+}
+
+function exportarFinanzas() {
+    const modal = mostrarCarga();
+    
+    setTimeout(() => {
+        modal.hide();
+        window.open('/api/exportar/finanzas', '_blank');
+    }, 2000);
+}
+
+function generarReporteMensual() {
+    const mes = document.getElementById('mes-reporte').value;
+    const ano = document.getElementById('ano-reporte').value;
+    
+    if (!mes || !ano) {
+        alert('Seleccione mes y año');
+        return;
+    }
+    
+    const modal = mostrarCarga();
+    
+    setTimeout(() => {
+        modal.hide();
+        // En la implementación real, se generaría el reporte del servidor
+        window.open(`/api/reportes/mensual?mes=${mes}&ano=${ano}`, '_blank');
+    }, 3000);
+}
+
+function generarReporteRango() {
+    const fechaDesde = document.getElementById('fecha-desde').value;
+    const fechaHasta = document.getElementById('fecha-hasta').value;
+    
+    if (!fechaDesde || !fechaHasta) {
+        alert('Seleccione ambas fechas');
+        return;
+    }
+    
+    if (fechaDesde > fechaHasta) {
+        alert('La fecha "desde" debe ser anterior a la fecha "hasta"');
+        return;
+    }
+    
+    const modal = mostrarCarga();
+    
+    setTimeout(() => {
+        modal.hide();
+        window.open(`/api/reportes/rango?desde=${fechaDesde}&hasta=${fechaHasta}`, '_blank');
+    }, 3000);
+}
+
+// Función para mostrar análisis detallado
+function analizarTendencias() {
+    alert('Funcionalidad de análisis de tendencias en desarrollo');
+}
+</script>
+{% endblock %}
